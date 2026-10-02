@@ -9,8 +9,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,json
 
 version = 0.1
 
-requirements = python3==3.14.2,hostpython3==3.14.2,kivy==2.3.1
-p4a.branch = develop
+requirements = python3,kivy
 
 orientation = portrait
 fullscreen = 0
