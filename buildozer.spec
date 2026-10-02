@@ -32,7 +32,7 @@ android.debug_artifact = apk
 
 p4a.url = https://github.com/kivy/python-for-android.git
 p4a.branch = master
-p4a.commit = 2024.01.21
+p4a.commit = v2024.01.21
 
 
 
