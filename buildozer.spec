@@ -24,7 +24,7 @@ android.permissions = INTERNET,POST_NOTIFICATIONS
 android.enable_androidx = True
 android.gradle_dependencies = com.google.firebase:firebase-messaging:24.1.2
 android.add_src = %(source.dir)s/android_src
-android.extra_manifest_application_arguments = %(source.dir)s/android_src/firebase_manifest.xml
+android.extra_manifest_application_xml = %(source.dir)s/android_src/firebase_manifest.xml
 android.add_resources = %(source.dir)s/android_src/res
 
 android.allow_backup = True
