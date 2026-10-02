@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,json
 
 version = 0.1
 
-requirements = python3,kivy==2.3.0,pyjnius
+requirements = python3,kivy,pyjnius
 
 orientation = portrait
 fullscreen = 0
