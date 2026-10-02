@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="google_app_id" translatable="false">1:609198798927:android:696e9df3f32e95011e123a</string>
+    <string name="gcm_defaultSenderId" translatable="false">609198798927</string>
+    <string name="google_api_key" translatable="false">AIzaSyCOLl2-1Mb311a9ZMmY0r4b7CJSXeXwHJU</string>
+    <string name="project_id" translatable="false">vente-24ed2</string>
+</resources>
