@@ -49,7 +49,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "cython==0.29.36"
           python -m pip install "buildozer==1.5.0"
-          python -m pip install "python-for-android==2024.1.21"
+       
 
       - name: Clean everything
         run: |
