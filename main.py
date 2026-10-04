@@ -147,7 +147,7 @@ MDScreen:
                         halign: "center"
                         font_size: "18sp"
 
-                        MDScreen:
+                        
     
             # =========================
             # ADMINISTRATION
