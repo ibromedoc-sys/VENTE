@@ -10,7 +10,8 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,json
 version = 0.1
 
 
-requirements = python3,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,materialyoucolor==3.0.3,materialshapes,pycairo,pillow,exceptiongroup,asynckivy,asyncgui,pyjnius
+
+requirements = python3==3.12.10,hostpython3==3.12.10,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,materialyoucolor==3.0.3,materialshapes,pycairo,pillow,exceptiongroup,asynckivy,asyncgui,pyjnius
 
 
 orientation = portrait
