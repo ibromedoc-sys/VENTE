@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,json
 
 version = 0.1
 
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,pyjnius
+requirements = python3,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,materialyoucolor==3.0.3,materialshapes,asynckivy,asyncgui,pyjnius
 
 orientation = portrait
 fullscreen = 0
