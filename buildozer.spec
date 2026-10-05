@@ -11,7 +11,7 @@ version = 0.1
 
 
 
-requirements = python3==3.12.10,hostpython3==3.12.10,kivy==2.3.0,https://github.com/kivymd/KivyMD/archive/master.zip,materialyoucolor==3.0.3,materialshapes,pycairo,pillow,exceptiongroup,asynckivy,asyncgui,pyjnius
+requirements = python3==3.12.10,hostpython3==3.12.10,kivy==2.3.0,kivymd==2.0.0,materialyoucolor==3.0.4,materialshapes==0.3,asynckivy==0.6.4,asyncgui==0.6.3,pillow,pycairo
 
 
 orientation = portrait
@@ -34,7 +34,8 @@ android.allow_backup = True
 android.debug_artifact = apk
 
 p4a.url = https://github.com/kivy/python-for-android.git
-p4a.branch = develop
+p4a.branch = master
+p4a.commit = v2026.05.09
 
 
 
