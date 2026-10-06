@@ -52,6 +52,16 @@ jobs:
           python -m pip install "kivy==2.3.0" "kivymd==2.0.0"
        
 
+      - name: Cache python-for-android downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            ~/.cache/pip
+          key: p4a-build-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            p4a-build-${{ runner.os }}-
+
       - name: Clean everything
         run: |
           rm -rf .buildozer
