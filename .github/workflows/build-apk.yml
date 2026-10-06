@@ -72,11 +72,10 @@ jobs:
           cython --version
           python -c "import Cython; print(Cython.__version__)"
 
-      - name: Précharger FreeType
+      - name: Préparer FreeType local
         run: |
           mkdir -p ~/.buildozer/android/packages
-          wget -O ~/.buildozer/android/packages/freetype-2.14.1.tar.gz \
-            https://github.com/freetype/freetype/releases/download/VER-2-14-1/freetype-2.14.1.tar.gz
+          cp vendor/freetype-2.14.1.tar.gz ~/.buildozer/android/packages/freetype-2.14.1.tar.gz
           ls -lh ~/.buildozer/android/packages/freetype-2.14.1.tar.gz
 
       - name: Build APK
