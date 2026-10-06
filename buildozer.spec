@@ -21,6 +21,7 @@ android.accept_sdk_license = True
 android.api = 34
 android.minapi = 24
 android.ndk_api = 24
+android.ndk = 28c
 android.archs = arm64-v8a
 
 android.permissions = INTERNET,POST_NOTIFICATIONS

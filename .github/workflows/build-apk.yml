@@ -63,7 +63,25 @@ jobs:
           cython --version
           python -c "import Cython; print(Cython.__version__)"
 
+      - name: Prepare patched CPython 3.12.10 source
+        run: |
+          set -euo pipefail
+          cpython_dir="$RUNNER_TEMP/cpython-3.12.10"
+          mkdir -p "$cpython_dir"
+          curl -fsSL https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tgz \
+            | tar -xz --strip-components=1 -C "$cpython_dir"
+          curl -fsSL https://github.com/python/cpython/pull/114876.patch \
+            -o "$RUNNER_TEMP/cpython-grp-getgrent.patch"
+          patch --dry-run --fuzz=0 -p1 -d "$cpython_dir" \
+            < "$RUNNER_TEMP/cpython-grp-getgrent.patch"
+          patch --fuzz=0 -p1 -d "$cpython_dir" \
+            < "$RUNNER_TEMP/cpython-grp-getgrent.patch"
+          grep -q 'ac_cv_func_getgrent' "$cpython_dir/configure.ac"
+          grep -q 'HAVE_GETGRENT' "$cpython_dir/pyconfig.h.in"
+
       - name: Build APK
+        env:
+          P4A_python3_DIR: ${{ runner.temp }}/cpython-3.12.10
         run: |
           buildozer -v android debug
 
