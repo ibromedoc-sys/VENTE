@@ -74,9 +74,33 @@ jobs:
 
       - name: Préparer FreeType local
         run: |
-          mkdir -p ~/.buildozer/android/packages
-          cp vendor/freetype-2.14.1.tar.gz ~/.buildozer/android/packages/freetype-2.14.1.tar.gz
-          ls -lh ~/.buildozer/android/packages/freetype-2.14.1.tar.gz
+          test -f vendor/freetype-2.14.1.tar.gz
+          ls -lh vendor/freetype-2.14.1.tar.gz
+
+      - name: Préparer python-for-android
+        run: |
+          mkdir -p .buildozer/android/platform
+          if [ ! -d .buildozer/android/platform/python-for-android ]; then
+            git clone https://github.com/kivy/python-for-android.git \
+              .buildozer/android/platform/python-for-android
+          fi
+
+          cd .buildozer/android/platform/python-for-android
+          git checkout v2026.05.09
+
+      - name: Patch recette FreeType
+        run: |
+          RECIPE=".buildozer/android/platform/python-for-android/pythonforandroid/recipes/freetype/__init__.py"
+
+          echo "=== Recette FreeType avant patch ==="
+          grep -n "version\|url" "$RECIPE"
+
+          sed -i "s/version = '2.10.1'/version = '2.14.1'/" "$RECIPE"
+
+          sed -i "s#https://download.savannah.gnu.org/releases/freetype/freetype-{version}.tar.gz#file:///home/runner/work/VENTE/VENTE/vendor/freetype-2.14.1.tar.gz#" "$RECIPE"
+
+          echo "=== Recette FreeType après patch ==="
+          grep -n "version\|url" "$RECIPE"
 
       - name: Build APK
         run: |

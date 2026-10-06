@@ -37,6 +37,7 @@ android.debug_artifact = apk
 p4a.url = https://github.com/kivy/python-for-android.git
 p4a.branch = master
 p4a.commit = v2026.05.09
+p4a.source_dir = .buildozer/android/platform/python-for-android
 
 
 
