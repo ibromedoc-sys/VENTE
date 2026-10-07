@@ -68,9 +68,9 @@ jobs:
           path: |
             ~/.cache/pip
             .buildozer/android/packages
-          key: p4a-downloads-v3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: p4a-downloads-v4-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            p4a-downloads-v3-${{ runner.os }}-
+            p4a-downloads-v4-${{ runner.os }}-
 
       - name: Check Cython
         run: |
