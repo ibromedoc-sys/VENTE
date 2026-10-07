@@ -68,9 +68,9 @@ jobs:
           path: |
             ~/.cache/pip
             .buildozer/android/packages
-          key: p4a-downloads-v4-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: p4a-downloads-v5-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            p4a-downloads-v4-${{ runner.os }}-
+            p4a-downloads-v5-${{ runner.os }}-
 
       - name: Check Cython
         run: |
@@ -109,19 +109,23 @@ jobs:
               / "freetype"
               / "__init__.py"
           )
+          archive = workspace / "vendor" / "freetype-2.14.1.tar.gz"
+
+          if not archive.is_file():
+              raise SystemExit(f"Archive FreeType introuvable : {archive}")
 
           source = recipe.read_text(encoding="utf-8")
 
-          old_version = "version = '2.10.1'"
+          expected_version = "version = '2.14.1'"
           old_url = (
               "https://download.savannah.gnu.org/releases/"
               "freetype/freetype-{version}.tar.gz"
           )
 
-          if source.count(old_version) != 1:
+          if source.count(expected_version) != 1:
               raise SystemExit(
-                  f"Version FreeType attendue une fois dans {recipe}, "
-                  f"mais trouvée {source.count(old_version)} fois."
+                  f"La recette FreeType n'est pas dans la version attendue "
+                  f"2.14.1 : {recipe}"
               )
 
           if source.count(old_url) != 1:
@@ -130,18 +134,13 @@ jobs:
                   f"mais trouvée {source.count(old_url)} fois."
               )
 
-          local_archive_url = (
-              f"file://{workspace.as_posix()}/vendor/freetype-2.14.1.tar.gz"
-          )
-
-          source = source.replace(old_version, "version = '2.14.1'")
+          local_archive_url = archive.as_uri()
           source = source.replace(old_url, local_archive_url)
 
           recipe.write_text(source, encoding="utf-8")
 
-          for line in source.splitlines():
-              if "version =" in line or "url =" in line:
-                  print(line)
+          print(f"Version FreeType vérifiée : {expected_version}")
+          print(f"Archive FreeType utilisée : {local_archive_url}")
           PY
 
       - name: Build APK
