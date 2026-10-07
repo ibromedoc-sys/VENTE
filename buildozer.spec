@@ -5,14 +5,12 @@ package.name = app
 package.domain = com.vente
 
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,kv,atlas,json
+source.include_exts = py,png,jpg,jpeg,webp,kv,atlas,json,db
+source.exclude_dirs = .git,.buildozer,bin,venv,__pycache__
 
 version = 0.1
 
-
-
-requirements = python3==3.12.10,hostpython3==3.12.10,kivy==2.3.0,kivymd==2.0.0,materialyoucolor==3.0.4,materialshapes==0.3,asynckivy==0.6.4,asyncgui==0.6.3,pillow,pycairo
-
+requirements = python3,kivy==2.3.0,kivymd==2.0.0,materialyoucolor==3.0.4,materialshapes==0.3,asynckivy==0.6.4,asyncgui==0.6.3,pillow
 
 orientation = portrait
 fullscreen = 0
@@ -38,8 +36,6 @@ p4a.url = https://github.com/kivy/python-for-android.git
 p4a.branch = master
 p4a.commit = v2026.05.09
 p4a.source_dir = .buildozer/android/platform/python-for-android
-
-
 
 
 [buildozer]

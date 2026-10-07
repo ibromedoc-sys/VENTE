@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -20,7 +23,7 @@ jobs:
           python-version: "3.12.10"
 
       - name: Setup Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
@@ -29,78 +32,117 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            build-essential \
             git \
             wget \
             zip \
             unzip \
-            openjdk-17-jdk \
             autoconf \
             automake \
             libtool \
+            libltdl-dev \
             pkg-config \
             zlib1g-dev \
             libncurses5-dev \
             libncursesw5-dev \
+            libtinfo5 \
             cmake \
             libffi-dev \
             libssl-dev
 
       - name: Install Buildozer
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "Cython==3.0.12" "setuptools<70"
+          python -m pip install --upgrade pip
+          python -m pip install "setuptools<70" wheel
+          python -m pip install "Cython==3.0.12"
           python -m pip install "buildozer==1.5.0"
-          python -m pip install "kivy==2.3.0" "kivymd==2.0.0"
 
-      - name: Clean everything
+      - name: Clean previous build
         run: |
           rm -rf .buildozer
           rm -rf bin
 
-      - name: Cache python-for-android downloads
+      - name: Cache build downloads
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
-            ~/.buildozer/android/packages
-          key: p4a-downloads-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+            .buildozer/android/packages
+          key: p4a-downloads-v3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            p4a-downloads-v2-${{ runner.os }}-
+            p4a-downloads-v3-${{ runner.os }}-
 
-      - name: Vérifier Cython
+      - name: Check Cython
         run: |
           cython --version
           python -c "import Cython; print(Cython.__version__)"
 
-      - name: Préparer FreeType local
+      - name: Check FreeType archive
         run: |
           test -f vendor/freetype-2.14.1.tar.gz
           ls -lh vendor/freetype-2.14.1.tar.gz
 
-      - name: Préparer python-for-android
+      - name: Prepare python-for-android
         run: |
           mkdir -p .buildozer/android/platform
-          if [ ! -d .buildozer/android/platform/python-for-android ]; then
-            git clone https://github.com/kivy/python-for-android.git \
-              .buildozer/android/platform/python-for-android
-          fi
+          git clone \
+            --depth 1 \
+            --branch v2026.05.09 \
+            https://github.com/kivy/python-for-android.git \
+            .buildozer/android/platform/python-for-android
 
-          cd .buildozer/android/platform/python-for-android
-          git checkout v2026.05.09
-
-      - name: Patch recette FreeType
+      - name: Configure local FreeType archive
         run: |
-          RECIPE=".buildozer/android/platform/python-for-android/pythonforandroid/recipes/freetype/__init__.py"
+          python - <<'PY'
+          import os
+          from pathlib import Path
 
-          echo "=== Recette FreeType avant patch ==="
-          grep -n "version\|url" "$RECIPE"
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          recipe = (
+              workspace
+              / ".buildozer"
+              / "android"
+              / "platform"
+              / "python-for-android"
+              / "pythonforandroid"
+              / "recipes"
+              / "freetype"
+              / "__init__.py"
+          )
 
-          sed -i "s/version = '2.10.1'/version = '2.14.1'/" "$RECIPE"
+          source = recipe.read_text(encoding="utf-8")
 
-          sed -i "s#https://download.savannah.gnu.org/releases/freetype/freetype-{version}.tar.gz#file:///home/runner/work/VENTE/VENTE/vendor/freetype-2.14.1.tar.gz#" "$RECIPE"
+          old_version = "version = '2.10.1'"
+          old_url = (
+              "https://download.savannah.gnu.org/releases/"
+              "freetype/freetype-{version}.tar.gz"
+          )
 
-          echo "=== Recette FreeType après patch ==="
-          grep -n "version\|url" "$RECIPE"
+          if source.count(old_version) != 1:
+              raise SystemExit(
+                  f"Version FreeType attendue une fois dans {recipe}, "
+                  f"mais trouvée {source.count(old_version)} fois."
+              )
+
+          if source.count(old_url) != 1:
+              raise SystemExit(
+                  f"URL FreeType attendue une fois dans {recipe}, "
+                  f"mais trouvée {source.count(old_url)} fois."
+              )
+
+          local_archive_url = (
+              f"file://{workspace.as_posix()}/vendor/freetype-2.14.1.tar.gz"
+          )
+
+          source = source.replace(old_version, "version = '2.14.1'")
+          source = source.replace(old_url, local_archive_url)
+
+          recipe.write_text(source, encoding="utf-8")
+
+          for line in source.splitlines():
+              if "version =" in line or "url =" in line:
+                  print(line)
+          PY
 
       - name: Build APK
         run: |
