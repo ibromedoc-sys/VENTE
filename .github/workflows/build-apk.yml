@@ -68,9 +68,9 @@ jobs:
           path: |
             ~/.cache/pip
             .buildozer/android/packages
-          key: p4a-downloads-v5-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: p4a-downloads-v6-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            p4a-downloads-v5-${{ runner.os }}-
+            p4a-downloads-v6-${{ runner.os }}-
 
       - name: Check Cython
         run: |
@@ -91,57 +91,18 @@ jobs:
             https://github.com/kivy/python-for-android.git \
             .buildozer/android/platform/python-for-android
 
-      - name: Configure local FreeType archive
+      - name: Extract local FreeType source
         run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
+          FREETYPE_DIR="$RUNNER_TEMP/freetype-2.14.1"
+          mkdir -p "$FREETYPE_DIR"
 
-          workspace = Path(os.environ["GITHUB_WORKSPACE"])
-          recipe = (
-              workspace
-              / ".buildozer"
-              / "android"
-              / "platform"
-              / "python-for-android"
-              / "pythonforandroid"
-              / "recipes"
-              / "freetype"
-              / "__init__.py"
-          )
-          archive = workspace / "vendor" / "freetype-2.14.1.tar.gz"
+          tar -xzf \
+            "$GITHUB_WORKSPACE/vendor/freetype-2.14.1.tar.gz" \
+            --strip-components=1 \
+            -C "$FREETYPE_DIR"
 
-          if not archive.is_file():
-              raise SystemExit(f"Archive FreeType introuvable : {archive}")
-
-          source = recipe.read_text(encoding="utf-8")
-
-          expected_version = "version = '2.14.1'"
-          old_url = (
-              "https://download.savannah.gnu.org/releases/"
-              "freetype/freetype-{version}.tar.gz"
-          )
-
-          if source.count(expected_version) != 1:
-              raise SystemExit(
-                  f"La recette FreeType n'est pas dans la version attendue "
-                  f"2.14.1 : {recipe}"
-              )
-
-          if source.count(old_url) != 1:
-              raise SystemExit(
-                  f"URL FreeType attendue une fois dans {recipe}, "
-                  f"mais trouvée {source.count(old_url)} fois."
-              )
-
-          local_archive_url = archive.as_uri()
-          source = source.replace(old_url, local_archive_url)
-
-          recipe.write_text(source, encoding="utf-8")
-
-          print(f"Version FreeType vérifiée : {expected_version}")
-          print(f"Archive FreeType utilisée : {local_archive_url}")
-          PY
+          test -f "$FREETYPE_DIR/configure"
+          echo "P4A_FREETYPE_DIR=$FREETYPE_DIR" >> "$GITHUB_ENV"
 
       - name: Build APK
         run: |
