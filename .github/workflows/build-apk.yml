@@ -6,9 +6,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -20,10 +17,10 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.10"
+          python-version: "3.11"
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -32,123 +29,40 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
             git \
-            wget \
             zip \
             unzip \
+            openjdk-17-jdk \
             autoconf \
             automake \
             libtool \
-            libltdl-dev \
             pkg-config \
             zlib1g-dev \
             libncurses5-dev \
             libncursesw5-dev \
-            libtinfo5 \
             cmake \
             libffi-dev \
             libssl-dev
-
       - name: Install Buildozer
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "setuptools<70" wheel
-          python -m pip install "Cython==3.0.12"
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "Cython==0.29.36" "setuptools<70"
           python -m pip install "buildozer==1.5.0"
+          python -m pip install "kivy==2.3.0" "kivymd==2.0.0"
+       
 
-      - name: Clean previous build
+      - name: Clean everything
         run: |
           rm -rf .buildozer
           rm -rf bin
-
-      - name: Cache build downloads
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            .buildozer/android/packages
-          key: p4a-downloads-v7-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            p4a-downloads-v7-${{ runner.os }}-
-
-      - name: Check Cython
+    
+      - name: Vérifier Cython
         run: |
           cython --version
           python -c "import Cython; print(Cython.__version__)"
-
-      - name: Check FreeType archive
-        run: |
-          test -f vendor/freetype-2.14.1.tar.gz
-          ls -lh vendor/freetype-2.14.1.tar.gz
-
-      - name: Prepare python-for-android
-        run: |
-          mkdir -p .buildozer/android/platform
-          git clone \
-            --depth 1 \
-            --branch v2026.05.09 \
-            https://github.com/kivy/python-for-android.git \
-            .buildozer/android/platform/python-for-android
-
-      - name: Use Python 3.12.10 in python-for-android
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          p4a = (
-              Path(".buildozer")
-              / "android"
-              / "platform"
-              / "python-for-android"
-              / "pythonforandroid"
-              / "recipes"
-          )
-
-          changes = [
-              (
-                  p4a / "python3" / "__init__.py",
-                  "version = '3.14.2'",
-                  "version = '3.12.10'",
-              ),
-              (
-                  p4a / "hostpython3" / "__init__.py",
-                  'version = "3.14.2"',
-                  'version = "3.12.10"',
-              ),
-          ]
-
-          for recipe, old, new in changes:
-              source = recipe.read_text(encoding="utf-8")
-              count = source.count(old)
-
-              if count != 1:
-                  raise SystemExit(
-                      f"Version Python inattendue dans {recipe}: "
-                      f"chaîne trouvée {count} fois au lieu d'une."
-                  )
-
-              recipe.write_text(source.replace(old, new), encoding="utf-8")
-              print(f"{recipe}: {old} -> {new}")
-          PY
-
-      - name: Extract local FreeType source
-        run: |
-          FREETYPE_DIR="$RUNNER_TEMP/freetype-2.14.1"
-          mkdir -p "$FREETYPE_DIR"
-
-          tar -xzf \
-            "$GITHUB_WORKSPACE/vendor/freetype-2.14.1.tar.gz" \
-            --strip-components=1 \
-            -C "$FREETYPE_DIR"
-
-          test -f "$FREETYPE_DIR/configure"
-          echo "P4A_FREETYPE_DIR=$FREETYPE_DIR" >> "$GITHUB_ENV"
-
       - name: Build APK
         run: |
           buildozer -v android debug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
