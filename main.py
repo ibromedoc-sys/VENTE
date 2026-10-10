@@ -1,11 +1,15 @@
 import webbrowser
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote
 
+from kivy.clock import Clock
 from kivy.lang import Builder
 from kivymd.app import MDApp
 
 from database import (
     creer_base,
+    administrateur_connecte,
+    authentifier_administrateur,
     obtenir_produits,
     ajouter_produit,
     modifier_produit,
@@ -28,6 +32,21 @@ from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.button import Button
+from kivy.uix.label import Label as KivyLabel
+from kivy.uix.textinput import TextInput
+
+
+def kv_escape(value):
+    if value is None:
+        return ""
+
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+    )
 
 
 KV = """
@@ -381,6 +400,119 @@ class VenteApp(MDApp):
 
     publication_a_modifier = None
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._database_executor = ThreadPoolExecutor(max_workers=4)
+
+    def _executer_en_arriere_plan(self, operation, on_success=None, on_error=None):
+        future = self._database_executor.submit(operation)
+
+        def terminer(tache):
+            try:
+                resultat = tache.result()
+            except Exception as error:
+                Clock.schedule_once(
+                    lambda dt, error=error: (
+                        on_error(error) if on_error else self._afficher_erreur(error)
+                    ),
+                    0,
+                )
+                return
+
+            if on_success:
+                Clock.schedule_once(
+                    lambda dt, resultat=resultat: on_success(resultat), 0
+                )
+
+        future.add_done_callback(terminer)
+
+    def _afficher_erreur(self, error):
+        Popup(
+            title="Erreur de connexion",
+            content=KivyLabel(
+                text=str(error),
+                text_size=(None, None),
+            ),
+            size_hint=(0.9, None),
+            height="180dp",
+        ).open()
+
+    def _executer_action_admin(self, operation, on_success):
+        if administrateur_connecte():
+            self._executer_en_arriere_plan(operation, on_success)
+            return
+        self._demander_connexion_admin(operation, on_success)
+
+    def _demander_connexion_admin(self, operation, on_success):
+        contenu = BoxLayout(
+            orientation="vertical",
+            spacing="10dp",
+            padding="12dp",
+        )
+        contenu.add_widget(KivyLabel(text="Connexion administrateur Firebase"))
+        email = TextInput(
+            hint_text="Adresse e-mail",
+            multiline=False,
+            size_hint_y=None,
+            height="45dp",
+        )
+        mot_de_passe = TextInput(
+            hint_text="Mot de passe",
+            password=True,
+            multiline=False,
+            size_hint_y=None,
+            height="45dp",
+        )
+        message = KivyLabel(
+            text="",
+            size_hint_y=None,
+            height="35dp",
+        )
+        bouton = Button(
+            text="Se connecter",
+            size_hint_y=None,
+            height="45dp",
+        )
+        contenu.add_widget(email)
+        contenu.add_widget(mot_de_passe)
+        contenu.add_widget(message)
+        contenu.add_widget(bouton)
+        popup = Popup(
+            title="Authentification requise",
+            content=contenu,
+            size_hint=(0.9, None),
+            height="300dp",
+            auto_dismiss=False,
+        )
+
+        def connecter(instance):
+            if not email.text.strip() or not mot_de_passe.text:
+                message.text = "Saisissez l'adresse e-mail et le mot de passe."
+                return
+
+            bouton.disabled = True
+            adresse_email = email.text.strip()
+            mot_de_passe_saisi = mot_de_passe.text
+
+            def connexion_reussie(_):
+                popup.dismiss()
+                self._executer_en_arriere_plan(operation, on_success)
+
+            def connexion_echouee(error):
+                message.text = str(error)
+                bouton.disabled = False
+
+            self._executer_en_arriere_plan(
+                lambda: authentifier_administrateur(
+                    adresse_email, mot_de_passe_saisi
+                ),
+                connexion_reussie,
+                connexion_echouee,
+            )
+
+        bouton.bind(on_release=connecter)
+        popup.open()
+
     def commander_whatsapp(self, produit, prix):
 
         numero = "22890000000"
@@ -395,12 +527,20 @@ class VenteApp(MDApp):
         webbrowser.open(url)
 
     def afficher_produits(self):
+        self._executer_en_arriere_plan(
+            obtenir_produits, self._afficher_produits
+        )
 
-        produits = obtenir_produits()
+    def _afficher_produits(self, produits):
 
         container = self.root.ids.produits_container
 
         for id_produit, nom, prix, description, image in produits:
+            nom_escaped = kv_escape(nom)
+            prix_escaped = kv_escape(prix)
+            id_produit_escaped = kv_escape(str(id_produit))
+            description_escaped = kv_escape(description)
+            image_escaped = kv_escape(image)
 
             carte = Builder.load_string(f"""
 MDCard:
@@ -412,12 +552,12 @@ MDCard:
     elevation: 3
 
     Image:
-        source: "{image}"
+        source: "{image_escaped}"
         size_hint_y: None
         height: "200dp"
 
     MDLabel:
-        text: "{nom}"
+        text: "{nom_escaped}"
         font_size: "22sp"
         bold: True
         halign: "center"
@@ -425,14 +565,14 @@ MDCard:
         height: "40dp"
 
     MDLabel:
-        text: "{prix}"
+        text: "{prix_escaped}"
         font_size: "20sp"
         halign: "center"
         size_hint_y: None
         height: "40dp"
 
     MDLabel:
-        text: "{description}"
+        text: "{description_escaped}"
         halign: "center"
         size_hint_y: None
         height: "50dp"
@@ -442,7 +582,7 @@ MDCard:
         pos_hint: {{"center_x": 0.5}}
         size_hint_x: None
         width: "220dp"
-        on_release: app.commander_whatsapp("{nom}", "{prix}")
+        on_release: app.commander_whatsapp("{nom_escaped}", "{prix_escaped}")
 
         MDButtonIcon:
             icon: "whatsapp"
@@ -465,13 +605,19 @@ MDCard:
     
     def afficher_produits_admin(self):
 
-       produits = obtenir_produits()
+       self._executer_en_arriere_plan(
+           obtenir_produits, self._afficher_produits_admin
+       )
+
+    def _afficher_produits_admin(self, produits):
 
        container = self.root.ids.admin_produits_container
 
        container.clear_widgets()
 
        for id_produit, nom, prix, description, image in produits:
+           nom_escaped = kv_escape(nom)
+           prix_escaped = kv_escape(prix)
 
            carte = Builder.load_string(f"""MDCard:
     orientation: "horizontal"
@@ -485,14 +631,14 @@ MDCard:
         spacing: "5dp"
 
         MDLabel:
-            text: "{nom}"
+            text: "{nom_escaped}"
             bold: True
             font_size: "18sp"
             size_hint_y: None
             height: "30dp"
 
         MDLabel:
-            text: "{prix}"
+            text: "{prix_escaped}"
             font_size: "16sp"
             size_hint_y: None
             height: "25dp"
@@ -508,7 +654,7 @@ MDCard:
         style: "filled"
         size_hint_x: None
         width: "130dp"
-        on_release: app.charger_produit_modifier({id_produit})
+        on_release: app.charger_produit_modifier("{id_produit_escaped}")
 
         MDButtonText:
             text: "Modifier"
@@ -517,7 +663,7 @@ MDCard:
         style: "filled"
         size_hint_x: None
         width: "130dp"
-        on_release: app.supprimer_produit_interface({id_produit})
+        on_release: app.supprimer_produit_interface("{id_produit_escaped}")
 
         MDButtonText:
             text: "Supprimer"
@@ -527,8 +673,14 @@ MDCard:
 
 
     def charger_produit_modifier(self, id_produit):
+        self._executer_en_arriere_plan(
+            obtenir_produits,
+            lambda produits: self._charger_produit_modifier(
+                produits, id_produit
+            ),
+        )
 
-        produits = obtenir_produits()
+    def _charger_produit_modifier(self, produits, id_produit):
 
         for produit in produits:
 
@@ -546,17 +698,6 @@ MDCard:
                 break
 
     def supprimer_produit_interface(self, id_produit):
-
-        produits = obtenir_produits()
-
-        nom_produit = ""
-
-        for produit in produits:
-
-             if produit[0] == id_produit:
-                nom_produit = produit[1]
-                break
-
         self.produit_a_supprimer = id_produit
 
         self.dialog_suppression = MDDialog()
@@ -579,7 +720,7 @@ MDCard:
                 )
 
         message = MDLabel(
-                text=f"Êtes-vous sûr de vouloir supprimer « {nom_produit} » ?",
+                text="Êtes-vous sûr de vouloir supprimer ce produit ?",
                 halign="center",
                 size_hint_y=None,
                 height="50dp"
@@ -634,18 +775,18 @@ MDCard:
 
 
     def confirmer_suppression(self, instance):
+        id_produit = self.produit_a_supprimer
 
-        supprimer_produit(self.produit_a_supprimer)
+        def suppression_reussie(_):
+            self.dialog_suppression.dismiss()
+            self.actualiser_produits()
+            self.afficher_produits_admin()
+            self.produit_a_supprimer = None
 
-        self.dialog_suppression.dismiss()
-
-        self.actualiser_produits()
-
-        self.afficher_produits_admin()
-
-        self.produit_a_supprimer = None
-
-        print("Produit supprimé avec succès !")
+        self._executer_action_admin(
+            lambda: supprimer_produit(id_produit),
+            suppression_reussie,
+        )
 
 
     def choisir_image(self):
@@ -818,8 +959,7 @@ MDCard:
            )
 
            print("Image de publication sélectionnée :", nom_fichier)
-
-        popup.dismiss()
+           popup.dismiss()
 
         bouton_annuler.bind(
            on_release=annuler
@@ -850,21 +990,20 @@ MDCard:
             print("Le nom et le prix sont obligatoires.")
             return
 
-        modifier_produit(
-            self.produit_a_modifier,
-            nom,
-            prix,
-            description,
-            image
-         )
+        id_produit = self.produit_a_modifier
 
-        print("Produit modifié avec succès !")
+        def modification_reussie(_):
+            print("Produit modifié avec succès !")
+            self.actualiser_produits()
+            self.afficher_produits_admin()
+            self.produit_a_modifier = None
 
-        self.actualiser_produits()
-
-        self.afficher_produits_admin()
-
-        self.produit_a_modifier = None
+        self._executer_action_admin(
+            lambda: modifier_produit(
+                id_produit, nom, prix, description, image
+            ),
+            modification_reussie,
+        )
 
 
 
@@ -879,15 +1018,15 @@ MDCard:
                  print("Le nom et le prix sont obligatoires.")
                  return
 
-              ajouter_produit(
-                  nom,
-              prix,
-              description,
-              image
-                  )
+              def ajout_reussi(_):
+                 print("Produit ajouté avec succès !")
+                 self.actualiser_produits()
+                 self.afficher_produits_admin()
 
-              print("Produit ajouté avec succès !")
-              self.actualiser_produits()
+              self._executer_action_admin(
+                  lambda: ajouter_produit(nom, prix, description, image),
+                  ajout_reussi,
+              )
 
 
     def ajouter_publication_interface(self):
@@ -901,34 +1040,26 @@ MDCard:
             print("Le titre de la publication est obligatoire.")
             return
 
-        ajouter_publication(
-           titre,
-           contenu,
-           date,
-           image
+        def ajout_reussi(_):
+            print("Publication ajoutée avec succès !")
+            self.afficher_publications_admin()
+            self.afficher_publications()
+
+        self._executer_action_admin(
+            lambda: ajouter_publication(titre, contenu, date, image),
+            ajout_reussi,
         )
-
-        print("Publication ajoutée avec succès !")
-
-        # TEST : vérifier ce que SQLite contient réellement
-        publications = obtenir_publications()
-
-        print("===================================")
-        print("PUBLICATIONS DANS LA BASE :")
-        print(publications)
-        print("NOMBRE DE PUBLICATIONS :", len(publications))
-        print("===================================")
-
-        # Actualiser la liste des publications dans ADMIN
-        self.afficher_publications_admin()
-
-        # Actualiser la liste des publications dans INFOS
-        self.afficher_publications()
 
    
     def charger_publication_modifier(self, id_publication):
+        self._executer_en_arriere_plan(
+            obtenir_publications,
+            lambda publications: self._charger_publication_modifier(
+                publications, id_publication
+            ),
+        )
 
-        publications = obtenir_publications()
+    def _charger_publication_modifier(self, publications, id_publication):
 
         for publication in publications:
 
@@ -966,34 +1097,40 @@ MDCard:
             print("Le titre de la publication est obligatoire.")
             return
 
-        modifier_publication(
-            self.publication_a_modifier,
-            titre,
-            contenu,
-            date,
-            image
+        id_publication = self.publication_a_modifier
+
+        def modification_reussie(_):
+            print("Publication modifiée avec succès !")
+            self.afficher_publications_admin()
+            self.afficher_publications()
+            self.publication_a_modifier = None
+
+        self._executer_action_admin(
+            lambda: modifier_publication(
+                id_publication, titre, contenu, date, image
+            ),
+            modification_reussie,
         )
-
-        print("Publication modifiée avec succès !")
-
-        self.afficher_publications_admin()
-
-        # Actualiser INFOS
-        self.afficher_publications()
-
-        self.publication_a_modifier = None
 
 
 
     def afficher_publications_admin(self):
 
-        publications = obtenir_publications()
+        self._executer_en_arriere_plan(
+            obtenir_publications, self._afficher_publications_admin
+        )
+
+    def _afficher_publications_admin(self, publications):
 
         container = self.root.ids.admin_publications_container
 
         container.clear_widgets()
 
         for id_publication, titre, contenu, date, image in publications:
+            titre_escaped = kv_escape(titre)
+            contenu_escaped = kv_escape(contenu)
+            date_escaped = kv_escape(date)
+            id_publication_escaped = kv_escape(str(id_publication))
 
             carte = Builder.load_string(f"""MDCard:
     orientation: "horizontal"
@@ -1007,20 +1144,20 @@ MDCard:
         spacing: "5dp"
 
         MDLabel:
-            text: "{titre}"
+            text: "{titre_escaped}"
             bold: True
             font_size: "18sp"
             size_hint_y: None
             height: "30dp"
 
         MDLabel:
-            text: "{date}"
+            text: "{date_escaped}"
             font_size: "15sp"
             size_hint_y: None
             height: "25dp"
 
         MDLabel:
-            text: "{contenu}"
+            text: "{contenu_escaped}"
             font_size: "14sp"
 
     MDBoxLayout:
@@ -1034,7 +1171,7 @@ MDCard:
             style: "filled"
             size_hint_x: None
             width: "130dp"
-            on_release: app.charger_publication_modifier({id_publication})
+            on_release: app.charger_publication_modifier("{id_publication_escaped}")
 
             MDButtonText:
                 text: "Modifier"
@@ -1043,7 +1180,7 @@ MDCard:
             style: "filled"
             size_hint_x: None
             width: "130dp"
-            on_release: app.supprimer_publication_interface({id_publication})
+            on_release: app.supprimer_publication_interface("{id_publication_escaped}")
 
             MDButtonText:
                 text: "Supprimer"
@@ -1053,17 +1190,6 @@ MDCard:
 
 
     def supprimer_publication_interface(self, id_publication):
-
-        publications = obtenir_publications()
-
-        titre_publication = ""
-
-        for publication in publications:
-
-            if publication[0] == id_publication:
-                titre_publication = publication[1]
-                break
-
         self.publication_a_supprimer = id_publication
 
         self.dialog_suppression_publication = MDDialog()
@@ -1086,7 +1212,7 @@ MDCard:
             )
 
         message = MDLabel(
-            text=f"Êtes-vous sûr de vouloir supprimer « {titre_publication} » ?",
+            text="Êtes-vous sûr de vouloir supprimer cette publication ?",
             halign="center",
             size_hint_y=None,
             height="50dp"
@@ -1147,35 +1273,39 @@ MDCard:
         if self.publication_a_supprimer is None:
             return
 
-    # Supprimer réellement dans la base
-        supprimer_publication(
-            self.publication_a_supprimer
+        id_publication = self.publication_a_supprimer
+
+        def suppression_reussie(_):
+            if hasattr(self, "dialog_suppression_publication"):
+                self.dialog_suppression_publication.dismiss()
+            self.publication_a_supprimer = None
+            self.afficher_publications_admin()
+            self.afficher_publications()
+            print("Publication supprimée avec succès !")
+
+        self._executer_action_admin(
+            lambda: supprimer_publication(id_publication),
+            suppression_reussie,
         )
-
-    # Fermer immédiatement la fenêtre de confirmation
-        if hasattr(self, "dialog_suppression_publication"):
-            self.dialog_suppression_publication.dismiss()
-
-    # Réinitialiser l'identifiant
-        self.publication_a_supprimer = None
-
-    # Actualiser les deux listes
-        self.afficher_publications_admin()
-        self.afficher_publications()
-
-        print("Publication supprimée avec succès !")
 
 
     
     def afficher_publications(self):
+        self._executer_en_arriere_plan(
+            obtenir_publications, self._afficher_publications
+        )
 
-        publications = obtenir_publications()
+    def _afficher_publications(self, publications):
 
         container = self.root.ids.publications_container
 
         container.clear_widgets()
 
         for id_publication, titre, contenu, date, image in publications:
+            titre_escaped = kv_escape(titre)
+            contenu_escaped = kv_escape(contenu)
+            date_escaped = kv_escape(date)
+            image_escaped = kv_escape(image)
 
             carte = Builder.load_string(f"""
 MDCard:
@@ -1187,12 +1317,12 @@ MDCard:
     elevation: 3
 
     Image:
-        source: "{image}"
+        source: "{image_escaped}"
         size_hint_y: None
         height: "200dp"
 
     MDLabel:
-        text: "{titre}"
+        text: "{titre_escaped}"
         font_size: "22sp"
         bold: True
         halign: "center"
@@ -1200,14 +1330,14 @@ MDCard:
         height: "45dp"
 
     MDLabel:
-        text: "{date}"
+        text: "{date_escaped}"
         font_size: "15sp"
         halign: "center"
         size_hint_y: None
         height: "30dp"
 
     MDLabel:
-        text: "{contenu}"
+        text: "{contenu_escaped}"
         font_size: "16sp"
         halign: "center"
         size_hint_y: None
