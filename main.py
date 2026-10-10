@@ -4,7 +4,14 @@ from urllib.parse import quote
 
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.properties import StringProperty
 from kivymd.app import MDApp
+from kivymd.uix.navigationbar import (
+    MDNavigationBar,
+    MDNavigationItem,
+    MDNavigationItemIcon,
+    MDNavigationItemLabel,
+)
 
 from database import (
     creer_base,
@@ -49,11 +56,27 @@ def kv_escape(value):
     )
 
 
+class BaseNavigationItem(MDNavigationItem):
+    icon = StringProperty()
+    text = StringProperty()
+    screen_name = StringProperty()
+
+
 KV = """
+<BaseNavigationItem>:
+    MDNavigationItemIcon:
+        icon: root.icon
+
+    MDNavigationItemLabel:
+        text: root.text
+
 MDScreen:
 
     MDBoxLayout:
         orientation: "vertical"
+        size_hint: None, None
+        size: root.size
+        pos: root.pos
 
         # =========================
         # BARRE DU HAUT
@@ -336,61 +359,35 @@ MDScreen:
         # =========================
         # NAVIGATION
         # =========================
-        MDBoxLayout:
-            size_hint_y: None
-            height: "70dp"
-            spacing: "5dp"
-            padding: "5dp"
+        MDNavigationBar:
+            id: navigation_bar
+            on_switch_tabs: app.on_switch_tabs(*args)
 
-            MDButton:
-                style: "filled"
-                on_release: screen_manager.current = "accueil"
+            BaseNavigationItem:
+                icon: "home"
+                text: "Accueil"
+                screen_name: "accueil"
+                active: True
 
-                MDButtonIcon:
-                    icon: "home"
+            BaseNavigationItem:
+                icon: "shopping"
+                text: "Produits"
+                screen_name: "produits"
 
-                MDButtonText:
-                    text: "Accueil"
+            BaseNavigationItem:
+                icon: "newspaper"
+                text: "Infos"
+                screen_name: "infos"
 
-            MDButton:
-                style: "filled"
-                on_release: screen_manager.current = "produits"
+            BaseNavigationItem:
+                icon: "information"
+                text: "À propos"
+                screen_name: "apropos"
 
-                MDButtonIcon:
-                    icon: "shopping"
-
-                MDButtonText:
-                    text: "Produits"
-
-            MDButton:
-                style: "filled"
-                on_release: screen_manager.current = "infos"
-
-                MDButtonIcon:
-                    icon: "newspaper"
-
-                MDButtonText:
-                    text: "Infos"
-
-            MDButton:
-                style: "filled"
-                on_release: screen_manager.current = "apropos"
-
-                MDButtonIcon:
-                    icon: "information"
-
-                MDButtonText:
-                    text: "À propos"
-    
-            MDButton:
-                style: "filled"
-                on_release: screen_manager.current = "admin"
-
-                MDButtonIcon:
-                    icon: "cog"
-
-                MDButtonText:
-                    text: "Admin"       
+            BaseNavigationItem:
+                icon: "cog"
+                text: "Admin"
+                screen_name: "admin"
 """
 
 
@@ -526,6 +523,9 @@ class VenteApp(MDApp):
 
         webbrowser.open(url)
 
+    def on_switch_tabs(self, bar, item, item_icon, item_text):
+        self.root.ids.screen_manager.current = item.screen_name
+
     def afficher_produits(self):
         self._executer_en_arriere_plan(
             obtenir_produits, self._afficher_produits
@@ -618,55 +618,53 @@ MDCard:
        for id_produit, nom, prix, description, image in produits:
            nom_escaped = kv_escape(nom)
            prix_escaped = kv_escape(prix)
+           id_produit_escaped = kv_escape(str(id_produit))
 
            carte = Builder.load_string(f"""MDCard:
-    orientation: "horizontal"
+    orientation: "vertical"
     size_hint_y: None
-    height: "100dp"
+    height: "135dp"
     padding: "10dp"
-    spacing: "15dp"
+    spacing: "8dp"
 
     MDBoxLayout:
         orientation: "vertical"
-        spacing: "5dp"
+        spacing: "2dp"
 
         MDLabel:
             text: "{nom_escaped}"
             bold: True
             font_size: "18sp"
             size_hint_y: None
-            height: "30dp"
+            height: "26dp"
 
         MDLabel:
             text: "{prix_escaped}"
             font_size: "16sp"
             size_hint_y: None
-            height: "25dp"
+            height: "24dp"
 
     MDBoxLayout:
         orientation: "horizontal"
-        spacing: "10dp"
-        size_hint_x: None
-        width: "270dp"
-        pos_hint: {{"center_y": 0.5}}
+        spacing: "8dp"
+        size_hint_y: None
+        height: "44dp"
 
-    MDButton:
-        style: "filled"
-        size_hint_x: None
-        width: "130dp"
-        on_release: app.charger_produit_modifier("{id_produit_escaped}")
+        MDButton:
+            style: "filled"
+            size_hint_x: 1
+            on_release: app.charger_produit_modifier("{id_produit_escaped}")
 
-        MDButtonText:
-            text: "Modifier"
+            MDButtonText:
+                text: "Modifier"
 
-    MDButton:
-        style: "filled"
-        size_hint_x: None
-        width: "130dp"
-        on_release: app.supprimer_produit_interface("{id_produit_escaped}")
+        MDButton:
+            style: "filled"
+            size_hint_x: 1
+            on_release: app.supprimer_produit_interface("{id_produit_escaped}")
 
-        MDButtonText:
-            text: "Supprimer"
+            MDButtonText:
+                text: "Supprimer"
 """)
 
            container.add_widget(carte)
@@ -833,6 +831,8 @@ MDCard:
         def annuler(instance):
            popup.dismiss()
 
+        bouton_annuler.bind(on_release=annuler)
+
         def selectionner(instance):
 
            if not filechooser.selection:
@@ -869,10 +869,6 @@ MDCard:
            print("Image sélectionnée :", nom_fichier)
 
            popup.dismiss()
-
-           bouton_annuler.bind(
-               on_release=annuler
-           )
 
         bouton_selectionner.bind(
            on_release=selectionner
@@ -1133,28 +1129,28 @@ MDCard:
             id_publication_escaped = kv_escape(str(id_publication))
 
             carte = Builder.load_string(f"""MDCard:
-    orientation: "horizontal"
+    orientation: "vertical"
     size_hint_y: None
-    height: "120dp"
+    height: "165dp"
     padding: "10dp"
-    spacing: "15dp"
+    spacing: "8dp"
 
     MDBoxLayout:
         orientation: "vertical"
-        spacing: "5dp"
+        spacing: "2dp"
 
         MDLabel:
             text: "{titre_escaped}"
             bold: True
             font_size: "18sp"
             size_hint_y: None
-            height: "30dp"
+            height: "26dp"
 
         MDLabel:
             text: "{date_escaped}"
             font_size: "15sp"
             size_hint_y: None
-            height: "25dp"
+            height: "22dp"
 
         MDLabel:
             text: "{contenu_escaped}"
@@ -1162,15 +1158,13 @@ MDCard:
 
     MDBoxLayout:
         orientation: "horizontal"
-        spacing: "10dp"
-        size_hint_x: None
-        width: "270dp"
-        pos_hint: {{"center_y": 0.5}}
+        spacing: "8dp"
+        size_hint_y: None
+        height: "44dp"
 
         MDButton:
             style: "filled"
-            size_hint_x: None
-            width: "130dp"
+            size_hint_x: 1
             on_release: app.charger_publication_modifier("{id_publication_escaped}")
 
             MDButtonText:
@@ -1178,8 +1172,7 @@ MDCard:
 
         MDButton:
             style: "filled"
-            size_hint_x: None
-            width: "130dp"
+            size_hint_x: 1
             on_release: app.supprimer_publication_interface("{id_publication_escaped}")
 
             MDButtonText:
