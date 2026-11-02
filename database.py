@@ -15,6 +15,7 @@ import certifi
 
 _FIREBASE_CONFIG = None
 _REQUEST_TIMEOUT = 20
+DEFAULT_WHATSAPP_NUMBER = "22899057931"
 
 _COLLECTIONS = {
     "produits": ("nom", "prix", "description", "image"),
@@ -69,7 +70,7 @@ def _ssl_context():
     return ssl.create_default_context(cafile=certifi.where())
 
 
-def _request_json(url):
+def _request_json(url, allow_missing=False):
     request = Request(url, headers={"Accept": "application/json"}, method="GET")
 
     try:
@@ -80,6 +81,8 @@ def _request_json(url):
     except HTTPError as error:
         response_data = _decode_response(error.read())
         message = response_data.get("error", {}).get("message")
+        if allow_missing and error.code == 404:
+            return None
         if error.code in (401, 403):
             detail = message or "accès refusé par les règles Firebase."
         else:
@@ -98,6 +101,32 @@ def _firestore_collection_url(collection):
         "/documents/{}".format(config["project_id"], collection)
     )
     return "{}?{}".format(url, urlencode({"key": config["api_key"]}))
+
+
+def _firestore_document_url(document_path):
+    config = _firebase_config()
+    url = (
+        "https://firestore.googleapis.com/v1/projects/{}/databases/(default)"
+        "/documents/{}".format(config["project_id"], document_path)
+    )
+    return "{}?{}".format(url, urlencode({"key": config["api_key"]}))
+
+
+def obtenir_telephone_whatsapp():
+    """Return the public WhatsApp contact configured for the Android app."""
+    document = _request_json(
+        _firestore_document_url("app_config/contact"),
+        allow_missing=True,
+    )
+    if document is None:
+        return DEFAULT_WHATSAPP_NUMBER
+
+    fields = document.get("fields", {})
+    value = fields.get("telephoneWhatsapp", {}).get("stringValue", "")
+    number = "".join(character for character in str(value) if character.isdigit())
+    if not 8 <= len(number) <= 15:
+        raise FirebaseError("Le numéro WhatsApp configuré dans Firebase est invalide.")
+    return number
 
 
 def _decode_fields(fields, field_names):

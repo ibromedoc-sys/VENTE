@@ -18,7 +18,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
-        String title = "VENTE";
+        String title = "SUPERLIFE TOGO";
         String body = "Nouvelle annonce disponible";
         String annonceId = "";
 
@@ -55,7 +55,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Notifications VENTE",
+                    "Notifications SUPERLIFE TOGO",
                     NotificationManager.IMPORTANCE_HIGH
             );
             manager.createNotificationChannel(channel);

@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "vente-24ed2"
+  },
+  "targets": {
+    "vente-24ed2": {
+      "hosting": {
+        "dashboard": [
+          "vente-24ed2"
+        ],
+        "storefront": [
+          "superlife-togo"
+        ]
+      }
+    }
   }
 }

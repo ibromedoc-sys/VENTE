@@ -18,7 +18,14 @@ from kivymd.uix.navigationbar import (
     MDNavigationItemLabel,
 )
 
-from database import FirebaseError, obtenir_produits, obtenir_publications, image_locale
+from database import (
+    DEFAULT_WHATSAPP_NUMBER,
+    FirebaseError,
+    obtenir_produits,
+    obtenir_publications,
+    obtenir_telephone_whatsapp,
+    image_locale,
+)
 
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
@@ -94,7 +101,7 @@ MDScreen:
         pos: root.pos
 
         MDTopAppBar:
-            title: "VENTE"
+            title: "SUPERLIFE TOGO"
 
         MDScreenManager:
             id: screen_manager
@@ -142,7 +149,7 @@ MDScreen:
                                 fit_mode: "contain"
                                 size_hint: 1, 1
                         MDLabel:
-                            text: "VENTE"
+                            text: "SUPERLIFE TOGO"
                             halign: "center"
                             font_size: "22sp"
                             bold: True
@@ -317,6 +324,10 @@ class VenteApp(MDApp):
         self._home_logo_paths = []
         self._home_logo_index = 0
         self._home_logo_active_id = "logo_image"
+        self.numero_whatsapp = DEFAULT_WHATSAPP_NUMBER
+
+    def _actualiser_numero_whatsapp(self, numero):
+        self.numero_whatsapp = numero
 
     def _animer_logo_suivant(self, _dt):
         if len(self._home_logo_paths) < 2 or self.root is None:
@@ -400,11 +411,14 @@ class VenteApp(MDApp):
             )
 
     def commander_whatsapp(self, produit, prix):
-        numero = "22899057931"
         message = "Bonjour, je souhaite commander {} au prix de {}.".format(
             produit, prix
         )
-        webbrowser.open("https://wa.me/{}?text={}".format(numero, quote(message)))
+        webbrowser.open(
+            "https://wa.me/{}?text={}".format(
+                self.numero_whatsapp, quote(message)
+            )
+        )
 
     def ouvrir_site(self):
         webbrowser.open("https://superlife-togo.com")
@@ -660,6 +674,10 @@ MDCard:
             self.owner_photo = str(owner_photo)
         interface = Builder.load_string(KV)
         self.root = interface
+        self._executer_en_arriere_plan(
+            obtenir_telephone_whatsapp,
+            self._actualiser_numero_whatsapp,
+        )
         self.afficher_produits()
         self.afficher_publications()
         return interface

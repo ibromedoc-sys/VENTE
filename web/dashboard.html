@@ -53,6 +53,9 @@
           <button class="tab" type="button" data-panel="publications-panel">
             Publications
           </button>
+          <button class="tab" type="button" data-panel="contact-panel">
+            Coordonnées
+          </button>
         </nav>
 
         <section id="products-panel" class="management-panel">
@@ -163,6 +166,27 @@
               <div id="publication-list" class="record-list"></div>
             </section>
           </div>
+        </section>
+
+        <section id="contact-panel" class="management-panel hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">CONTACT DE L’APPLICATION</p>
+              <h2>Numéro WhatsApp</h2>
+              <p class="muted">Ce numéro est utilisé par le bouton de commande de l’application Android.</p>
+            </div>
+          </div>
+          <form id="contact-form" class="editor-card contact-editor">
+            <label for="app-whatsapp-number">Numéro WhatsApp international</label>
+            <input id="app-whatsapp-number" name="telephoneWhatsapp"
+                   type="tel" inputmode="tel" maxlength="20" required>
+            <p class="field-help">Indicatif inclus, de 8 à 15 chiffres (par exemple 22890000000).</p>
+            <div class="form-actions">
+              <button class="button button-primary" type="submit">
+                Enregistrer le numéro
+              </button>
+            </div>
+          </form>
         </section>
       </section>
       <footer>VENTE · Administration protégée par Firebase Authentication</footer>

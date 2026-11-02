@@ -22,6 +22,7 @@ const CLOUDINARY_CLOUD_NAME = "jvljzrue";
 const CLOUDINARY_UPLOAD_PRESET = "vente_images";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const DEFAULT_WHATSAPP_NUMBER = "22899057931";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -34,10 +35,13 @@ const dashboard = $("#dashboard");
 const signOutButton = $("#sign-out");
 const productForm = $("#product-form");
 const publicationForm = $("#publication-form");
+const contactForm = $("#contact-form");
 const records = { produits: [], publications: [] };
 let unsubscribeProducts;
 let unsubscribePublications;
+let unsubscribeContact;
 let noticeTimeout;
+let contactDirty = false;
 const previewObjectUrls = new WeakMap();
 
 function showNotice(message, kind = "error") {
@@ -65,8 +69,10 @@ function setSignedIn(visible) {
 function stopListeners() {
   if (unsubscribeProducts) unsubscribeProducts();
   if (unsubscribePublications) unsubscribePublications();
+  if (unsubscribeContact) unsubscribeContact();
   unsubscribeProducts = undefined;
   unsubscribePublications = undefined;
+  unsubscribeContact = undefined;
 }
 
 function watchRecords() {
@@ -93,6 +99,37 @@ function watchRecords() {
     },
     (error) => showNotice(friendlyError(error)),
   );
+  unsubscribeContact = onSnapshot(
+    doc(db, "app_config", "contact"),
+    (snapshot) => {
+      if (contactDirty) return;
+      contactForm.elements.telephoneWhatsapp.value =
+        snapshot.data()?.telephoneWhatsapp || DEFAULT_WHATSAPP_NUMBER;
+    },
+    (error) => showNotice(friendlyError(error)),
+  );
+}
+
+async function saveContactSettings(event) {
+  event.preventDefault();
+  const submitButton = contactForm.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const number = contactForm.elements.telephoneWhatsapp.value.replace(/\D/g, "");
+    if (!/^\d{8,15}$/.test(number)) {
+      throw new Error("Entrez un numéro WhatsApp international valide, de 8 à 15 chiffres.");
+    }
+    await setDoc(doc(db, "app_config", "contact"), {
+      telephoneWhatsapp: number,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    contactDirty = false;
+    showNotice("Numéro WhatsApp de l’application enregistré.", "success");
+  } catch (error) {
+    showNotice(friendlyError(error));
+  } finally {
+    submitButton.disabled = false;
+  }
 }
 
 function escapeHtml(value = "") {
@@ -353,6 +390,10 @@ signOutButton.addEventListener("click", async () => {
 productForm.addEventListener("submit", (event) => saveRecord("produits", productForm, event));
 publicationForm.addEventListener("submit", (event) =>
   saveRecord("publications", publicationForm, event));
+contactForm.addEventListener("submit", saveContactSettings);
+contactForm.addEventListener("input", () => {
+  contactDirty = true;
+});
 
 for (const form of [productForm, publicationForm]) {
   const updateImagePreview = () => {
@@ -410,6 +451,7 @@ document.addEventListener("click", async (event) => {
 onAuthStateChanged(auth, async (user) => {
   stopListeners();
   if (!user) {
+    contactDirty = false;
     setSignedIn(false);
     $("#admin-email").textContent = "";
     return;

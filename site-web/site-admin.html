@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10233f">
+    <title>SUPERLIFE TOGO — Administration du site</title>
+    <link rel="icon" href="/assets/vente-icon-192.png" type="image/png">
+    <link rel="stylesheet" href="/site-admin.css">
+    <script type="module" src="/site-admin.js"></script>
+  </head>
+  <body>
+    <section class="login-view" id="login-view" hidden>
+      <a class="brand login-brand" href="/">
+        <img src="/assets/vente-icon-192.png" alt="" width="56" height="56">
+        <span>SUPERLIFE <b>TOGO</b><small>ADMINISTRATION DU SITE</small></span>
+      </a>
+      <form class="login-card" id="login-form">
+        <p class="eyebrow">ESPACE SÉCURISÉ</p>
+        <h1>Administration du site</h1>
+        <p class="muted">Connectez-vous avec un compte autorisé.</p>
+        <div class="notice" id="login-notice" role="status" aria-live="polite" hidden></div>
+        <label for="login-email">Adresse e-mail</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required>
+        <label for="login-password">Mot de passe</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <button class="button button-primary" type="submit">Se connecter <span>↗</span></button>
+        <a class="back-link" href="/">← Retour au site</a>
+      </form>
+    </section>
+
+    <div class="loading-view" id="loading-view">
+      <span class="loading-mark">S</span>
+      <p>Connexion à l’espace SUPERLIFE TOGO…</p>
+    </div>
+
+    <div class="admin-app" id="admin-app" hidden>
+      <header class="topbar">
+        <a class="brand" href="/">
+          <img src="/assets/vente-icon-192.png" alt="" width="46" height="46">
+          <span>SUPERLIFE <b>TOGO</b><small>ADMINISTRATION DU SITE</small></span>
+        </a>
+        <div class="topbar-actions">
+          <a class="store-link" href="/" target="_blank" rel="noopener noreferrer">Voir le site <span>↗</span></a>
+          <span class="admin-identity"><span class="avatar">S</span><span id="admin-email"></span></span>
+          <button class="button button-quiet" id="sign-out" type="button">Déconnexion</button>
+        </div>
+      </header>
+
+      <div class="admin-layout">
+        <aside class="sidebar">
+          <p class="sidebar-label">GESTION DU SITE WEB</p>
+          <nav class="side-nav" aria-label="Sections du tableau de bord du site">
+            <button class="side-link active" type="button" data-panel="site-products-panel">
+              <span class="side-icon">◇</span><span>Produits du site</span><span class="side-count" id="product-count">0</span>
+            </button>
+            <button class="side-link" type="button" data-panel="site-news-panel">
+              <span class="side-icon">▤</span><span>Actualités du site</span><span class="side-count" id="news-count">0</span>
+            </button>
+            <button class="side-link" type="button" data-panel="site-content-panel">
+              <span class="side-icon">✿</span><span>Textes & contacts</span>
+            </button>
+            <button class="side-link" type="button" data-panel="migration-panel">
+              <span class="side-icon">⇄</span><span>Copie initiale</span>
+            </button>
+          </nav>
+          <div class="sidebar-note">
+            <span>✦</span>
+            <p><b>Données du site séparées</b><br>Les modifications ici ne changent pas le catalogue de l’application VENTE.</p>
+          </div>
+          <a class="sidebar-back" href="/">← Retour au site</a>
+        </aside>
+
+        <main class="workspace">
+          <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+          <div class="welcome-row">
+            <div>
+              <p class="eyebrow">TABLEAU DE BORD DU SITE</p>
+              <h1>SUPERLIFE TOGO <span>✦</span></h1>
+              <p class="muted">Gérez le contenu de la boutique Web, indépendamment de l’application.</p>
+            </div>
+            <div class="today-badge"><span class="status-dot"></span>Connexion sécurisée</div>
+          </div>
+
+          <section class="summary-grid" aria-label="Résumé du site">
+            <article class="summary-card">
+              <span class="summary-icon blue">◇</span>
+              <span class="summary-label">PRODUITS DU SITE</span>
+              <strong id="product-total">0</strong>
+              <small>Catalogue Web indépendant</small>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon teal">▤</span>
+              <span class="summary-label">ACTUALITÉS DU SITE</span>
+              <strong id="news-total">0</strong>
+              <small>Publications Web indépendantes</small>
+            </article>
+            <article class="summary-card highlight-card">
+              <span class="summary-label">SUPERLIFE TOGO</span>
+              <strong>Votre boutique<br>sur le Web.</strong>
+              <small>Les données de l’application restent séparées.</small>
+            </article>
+          </section>
+
+          <section class="management-panel" id="site-products-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">CATALOGUE WEB</p><h2>Produits du site</h2><p class="muted">Ces produits sont indépendants du catalogue de l’application.</p></div>
+              <span class="live-badge"><i></i>Synchronisé avec Firebase</span>
+            </div>
+            <div class="section-grid">
+              <form class="editor-card" id="site-product-form">
+                <div class="card-heading"><span class="form-step">01</span><div><h3 id="site-product-form-title">Ajouter un produit</h3><p>Le nom et le prix sont obligatoires.</p></div></div>
+                <input name="id" type="hidden">
+                <label for="site-product-name">Nom du produit</label>
+                <input id="site-product-name" name="nom" maxlength="120" required>
+                <label for="site-product-price">Prix</label>
+                <input id="site-product-price" name="prix" maxlength="60" required>
+                <label for="site-product-description">Description</label>
+                <textarea id="site-product-description" name="description" rows="4" maxlength="2000"></textarea>
+                <label for="site-product-image-url">URL HTTPS de l’image (facultative)</label>
+                <input id="site-product-image-url" name="imageUrl" type="url" maxlength="2048" placeholder="https://...">
+                <label for="site-product-image-file">Ou choisir un fichier</label>
+                <input id="site-product-image-file" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp">
+                <div class="image-preview" data-image-preview hidden><img alt="Aperçu de l’image"><span data-image-caption></span></div>
+                <p class="field-help">JPEG, PNG ou WebP, 5 Mo maximum. Les images sont hébergées par Cloudinary.</p>
+                <div class="form-actions">
+                  <button class="button button-primary" type="submit">Enregistrer le produit</button>
+                  <button class="button button-quiet" type="button" data-cancel-form="site-product" hidden>Annuler</button>
+                </div>
+              </form>
+              <section class="list-card">
+                <div class="card-heading"><div><p class="eyebrow">SITE WEB</p><h3>Produits existants</h3></div><span id="product-count-card" class="count-badge">0</span></div>
+                <div id="site-product-list" class="record-list"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="management-panel" id="site-news-panel" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">PUBLICATIONS WEB</p><h2>Actualités du site</h2><p class="muted">Elles ne modifient pas les publications de l’application.</p></div>
+              <span class="live-badge"><i></i>Synchronisé avec Firebase</span>
+            </div>
+            <div class="section-grid">
+              <form class="editor-card" id="site-news-form">
+                <div class="card-heading"><span class="form-step">02</span><div><h3 id="site-news-form-title">Ajouter une actualité</h3><p>Le titre est obligatoire.</p></div></div>
+                <input name="id" type="hidden">
+                <label for="site-news-title">Titre</label>
+                <input id="site-news-title" name="titre" maxlength="160" required>
+                <label for="site-news-content">Contenu</label>
+                <textarea id="site-news-content" name="contenu" rows="5" maxlength="5000"></textarea>
+                <label for="site-news-date">Date</label>
+                <input id="site-news-date" name="date" type="date">
+                <label for="site-news-image-url">URL HTTPS de l’image (facultative)</label>
+                <input id="site-news-image-url" name="imageUrl" type="url" maxlength="2048" placeholder="https://...">
+                <label for="site-news-image-file">Ou choisir un fichier</label>
+                <input id="site-news-image-file" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp">
+                <div class="image-preview" data-image-preview hidden><img alt="Aperçu de l’image"><span data-image-caption></span></div>
+                <p class="field-help">JPEG, PNG ou WebP, 5 Mo maximum. Les images sont hébergées par Cloudinary.</p>
+                <div class="form-actions">
+                  <button class="button button-primary" type="submit">Enregistrer l’actualité</button>
+                  <button class="button button-quiet" type="button" data-cancel-form="site-news" hidden>Annuler</button>
+                </div>
+              </form>
+              <section class="list-card">
+                <div class="card-heading"><div><p class="eyebrow">SITE WEB</p><h3>Actualités existantes</h3></div><span id="news-count-card" class="count-badge">0</span></div>
+                <div id="site-news-list" class="record-list"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="management-panel" id="site-content-panel" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">IDENTITÉ DU SITE</p><h2>Textes & coordonnées</h2><p class="muted">Ces réglages ne modifient pas l’application VENTE.</p></div>
+            </div>
+            <form class="editor-card content-editor" id="site-content-form">
+              <label for="home-title">Titre de la page d’accueil</label>
+              <textarea id="home-title" name="accueilTitre" rows="2" maxlength="160" required></textarea>
+              <label for="home-description">Description de l’accueil</label>
+              <textarea id="home-description" name="accueilDescription" rows="3" maxlength="1000"></textarea>
+              <label for="about-description">Texte « À propos »</label>
+              <textarea id="about-description" name="aproposDescription" rows="4" maxlength="2000"></textarea>
+              <label for="whatsapp-number">Numéro WhatsApp international</label>
+              <input id="whatsapp-number" name="telephoneWhatsapp" type="tel" inputmode="tel" maxlength="20" required>
+              <p class="field-help">Indicatif inclus, chiffres uniquement si possible (ex. 22890000000).</p>
+              <label for="official-site">Site officiel (URL HTTPS)</label>
+              <input id="official-site" name="siteOfficiel" type="url" maxlength="2048" placeholder="https://...">
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">Enregistrer les textes</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="management-panel" id="migration-panel" hidden>
+            <div class="panel-heading">
+              <div><p class="eyebrow">DÉMARRAGE DU SITE</p><h2>Copie initiale du catalogue</h2>
+                <p class="muted">Copiez une seule fois les produits et actualités de l’application vers les collections indépendantes du site.</p></div>
+            </div>
+            <div class="migration-card">
+              <p>Cette opération conserve les données de l’application et copie leurs documents dans <code>site_produits</code> et <code>site_publications</code>. Les modifications ultérieures seront indépendantes.</p>
+              <p class="migration-warning">L’import est refusé si le catalogue du site contient déjà des éléments ; aucun document existant ne sera remplacé.</p>
+              <button class="button button-primary" id="copy-app-catalog" type="button">Copier le catalogue VENTE une fois</button>
+            </div>
+          </section>
+        </main>
+      </div>
+      <footer>SUPERLIFE TOGO · Tableau de bord Web protégé par Firebase Authentication</footer>
+    </div>
+  </body>
+</html>
