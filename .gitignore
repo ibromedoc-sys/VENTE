@@ -1,5 +1,8 @@
 .buildozer/
 bin/
 *.apk
+*.aab
+*.jks
+*.keystore
 __pycache__/
 *.pyc
